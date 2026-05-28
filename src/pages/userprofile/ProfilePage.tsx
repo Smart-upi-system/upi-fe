@@ -6,8 +6,6 @@ import SectionCard from "./components/SectionCard";
 import Field from "./components/Field";
 import styles from "./ProfilePage.module.scss";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
 type KycStatus = "PENDING" | "VERIFIED" | "REJECTED";
 
 interface UserProfile {
