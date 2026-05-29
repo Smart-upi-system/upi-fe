@@ -4,6 +4,7 @@ import Avatar from "./components/Avatar";
 import KycBadge from "./components/KycBadge";
 import SectionCard from "./components/SectionCard";
 import Field from "./components/Field";
+import { Wallet } from "../../wallet/Wallet";            // <-- import Wallet modal
 import styles from "./ProfilePage.module.scss";
 
 type KycStatus = "PENDING" | "VERIFIED" | "REJECTED";
@@ -50,13 +51,12 @@ const INITIAL_PROFILE: UserProfile = {
   updatedAt: "2025-05-22T14:07:00",
 };
 
- 
- 
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function UserProfilePage() {
   const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [saved, setSaved] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);   // <-- modal state
 
   function update<K extends keyof UserProfile>(
     key: K,
@@ -104,6 +104,14 @@ export default function UserProfilePage() {
 
           <KycBadge status={profile.kycStatus} />
         </div>
+
+        {/* Wallet button */}
+        <button
+          className={styles.walletButton}
+          onClick={() => setWalletOpen(true)}
+        >
+          💼 View Wallets
+        </button>
       </div>
 
       <SectionCard icon="👤" title="Personal info">
@@ -290,6 +298,9 @@ export default function UserProfilePage() {
           {saved ? "✓ Saved" : "Save changes"}
         </button>
       </div>
+
+      {/* Wallet Modal */}
+      <Wallet open={walletOpen} onClose={() => setWalletOpen(false)} />
     </div>
   );
 }

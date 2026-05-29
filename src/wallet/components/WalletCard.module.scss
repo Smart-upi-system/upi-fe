@@ -1,0 +1,137 @@
+.card {
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  color: #fff;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+  min-width: 220px;
+  flex: 0 0 auto;
+}
+
+.selected {
+  border-color: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.15);
+}
+
+.decorCircle1 {
+  position: absolute;
+  top: -24px;
+  right: -24px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.decorCircle2 {
+  position: absolute;
+  bottom: -16px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.emoji {
+  font-size: 20px;
+}
+
+.typeLabel {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 4px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.status {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.06em;
+  border: 0.5px solid transparent;
+}
+
+.active {
+  background: rgba(34, 197, 94, 0.25);
+  color: #86efac;
+  border-color: #86efac44;
+}
+
+.inactive {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+  border-color: #fca5a544;
+}
+
+.balanceSection {
+  margin-bottom: 16px;
+}
+
+.balanceLabel {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-bottom: 4px;
+}
+
+.balanceRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.balanceValue {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.toggleBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
+  padding: 0;
+}
+
+.goalName {
+  font-size: 11px;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.walletId {
+  font-size: 10px;
+  opacity: 0.5;
+  font-family: monospace;
+}
+
+// Themes – replace inline gradients with class-based backgrounds
+.theme-main {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+}
+
+.theme-savings {
+  background: linear-gradient(135deg, #134e2d 0%, #1a6b3c 60%, #22c55e 100%);
+}
+
+.theme-goal {
+  background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 60%, #a78bfa 100%);
+}
