@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect,useRef  } from "react";
 import type { ChangeEvent } from "react";
 import Avatar from "./components/Avatar";
 import KycBadge from "./components/KycBadge";
@@ -51,12 +51,15 @@ const INITIAL_PROFILE: UserProfile = {
   updatedAt: "2025-05-22T14:07:00",
 };
 
+  
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function UserProfilePage() {
   const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [saved, setSaved] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);   // <-- modal state
+  const [qrDropdownOpen, setQrDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   function update<K extends keyof UserProfile>(
     key: K,
@@ -79,6 +82,17 @@ export default function UserProfilePage() {
     setSaved(true);
   }
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setQrDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+
   const displayName =
     `${profile.firstName} ${profile.lastName}`.trim() || "User";
 
@@ -87,6 +101,8 @@ export default function UserProfilePage() {
       dateStyle: "medium",
       timeStyle: "short",
     });
+
+    
 
   return (
     <div className={styles.profilePage}>
@@ -105,13 +121,38 @@ export default function UserProfilePage() {
           <KycBadge status={profile.kycStatus} />
         </div>
 
-        {/* Wallet button */}
-        <button
+         <button
           className={styles.walletButton}
           onClick={() => setWalletOpen(true)}
         >
           💼 View Wallets
         </button>
+
+        {/* Wallet button */}
+        <div className={styles.walletButtonWrapper} ref={dropdownRef}>
+          <button
+            className={styles.walletButton}
+            onClick={() => setQrDropdownOpen(!qrDropdownOpen)}
+          >
+            View Qr
+          </button>
+          {qrDropdownOpen && (
+            <div className={styles.qrDropdown}>
+              <div className={styles.qrCode}>
+                {/* Example QR code – replace with real UPI/link */}
+                <img
+                  src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=arjun.rao@uws&pn=Arjun%20Rao&am=0&cu=INR"
+                  alt="UPI QR Code"
+                  width="120"
+                  height="120"
+                />
+                <p className={styles.qrText}>Scan to pay</p>
+              </div>
+            </div>
+          )}
+        </div>
+     
+    
       </div>
 
       <SectionCard icon="👤" title="Personal info">

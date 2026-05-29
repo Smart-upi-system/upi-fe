@@ -443,6 +443,87 @@ textarea.input {
   }
 }
 
+.walletButtonWrapper {
+  position: relative;
+  margin-left: auto;
+}
+
+.walletButton {
+  @include button-base;
+  background: $black;
+  color: $white;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  cursor: pointer;
+
+  &:hover {
+    background: lighten($black, 10%);
+    transform: translateY(-1px);
+  }
+}
+
+.qrDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  z-index: 100;
+  min-width: 150px;
+  border: 1px solid #e8e8e8;
+  animation: fadeIn 0.2s ease;
+}
+
+.qrCode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  img {
+    border-radius: 12px;
+    background: white;
+    padding: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+}
+
+.qrText {
+  font-size: 11px;
+  color: #666;
+  margin: 0;
+  font-weight: 500;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Responsive: on mobile, dropdown aligns left
+@media (max-width: 560px) {
+  .walletButtonWrapper {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .qrDropdown {
+    right: auto;
+    left: 0;
+    width: 100%;
+  }
+}
+
 // ==========================================
 // Responsive adjustments
 // ==========================================
