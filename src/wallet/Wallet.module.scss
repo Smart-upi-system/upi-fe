@@ -1,0 +1,289 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border-radius: 20px;
+  width: min(560px, calc(100vw - 2rem));
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  z-index: 1001;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+}
+
+.modalHeader {
+  padding: 1.25rem 1.5rem 0;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.total {
+  font-size: 12px;
+  color: #888;
+  margin: 3px 0 0;
+}
+
+.closeBtn {
+  background: #f5f5f3;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carouselWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 1.5rem;
+}
+
+.carousel {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;   // Firefox
+  scroll-behavior: smooth;
+  flex: 1;
+
+  &::-webkit-scrollbar {
+    display: none;          // Chrome/Safari
+  }
+
+  // Optional: add extra space at the end so the last card isn't cropped
+  &::after {
+    content: '';
+    flex: 0 0 1.5rem;       // same as wrapper margin/padding
+  }
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  border: none;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.2s;
+  padding: 0;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: translateY(-50%) scale(1.05);
+  }
+}
+
+.leftArrow {
+  left: -12px;
+}
+
+.rightArrow {
+  right: -12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 0.5px solid #e8e8e8;
+  margin: 4px 1.5rem 0 1.5rem;
+}
+
+.tab {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #999;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+
+.activeTab {
+  color: #111;
+  border-bottom-color: #111;
+}
+
+.tabContent {
+  overflow-y: auto;
+  padding: 1rem 1.5rem 1.5rem;
+  flex: 1;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.statItem {
+  background: #f8f8f6;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  border: 0.5px solid #ececea;
+}
+
+.statIcon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.statValue {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #888;
+  margin-top: 2px;
+}
+
+.goalCard {
+  background: #f3eeff;
+  border: 0.5px solid #ddd4fe;
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.goalHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5b21b6;
+}
+
+.progressBar {
+  height: 6px;
+  background: #ede9fe;
+  border-radius: 3px;
+}
+
+.progressFill {
+  height: 100%;
+  width: 54%;
+  background: #7c3aed;
+  border-radius: 3px;
+  transition: width 0.4s;
+}
+
+.goalStats {
+  font-size: 11px;
+  color: #888;
+  margin-top: 5px;
+}
+
+.recentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.recentLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #444;
+}
+
+.viewAllBtn {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #7c3aed;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.filterRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.filterBtn {
+  padding: 5px 14px;
+  font-size: 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  background: #f5f5f3;
+  color: #555;
+  border: 0.5px solid #e0e0e0;
+  font-weight: 500;
+}
+
+.modalFooter {
+  padding: 1rem 1.5rem;
+  border-top: 0.5px solid #f0f0f0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.secondaryBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 0.5px solid #e0e0e0;
+  background: #f8f8f6;
+  color: #111;
+}
+
+.primaryBtn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  background: #111;
+  color: #fff;
+}
