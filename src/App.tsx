@@ -4,6 +4,7 @@ import RegisterPage from './pages/authorization/register/SignUp'
 import UserProfilePage from './pages/userprofile/ProfilePage'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import { Wallet } from './wallet/Wallet'
+import Transaction from './pages/transactions/transaction'
 
 function App() {
 
@@ -15,6 +16,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/modal" element={<Wallet open={true} onClose={() => {}} />} />
+      <Route path="/transaction" element={<Transaction />} />
 
     </Routes>
     </BrowserRouter>
