@@ -2,19 +2,14 @@ import { useState, ChangeEvent, FormEvent } from 'react';
 import { TextInput } from '../components/TextInput';
 import { PasswordInput } from '../components/PasswordInputProps';
 import { Divider } from '../components/Divider';
+import { useLoginMutation } from '../../../apis/store/api/auth.ts';
 import styles from '../login.module.scss';
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types (same as before) ───────────────────────────────────────────────────
 
 interface LoginRequest {
   identifier: string;
   password: string;
-}
-
-interface AuthResponse {
-  token: string;
-  username: string;
-  email: string;
 }
 
 interface FieldError {
@@ -22,7 +17,7 @@ interface FieldError {
   password?: string;
 }
 
-// ── Validation ───────────────────────────────────────────────────────────────
+// ── Validation (unchanged) ───────────────────────────────────────────────────
 
 function validate(form: LoginRequest): FieldError {
   const errors: FieldError = {};
@@ -37,16 +32,19 @@ export default function LoginPage() {
   const [form, setForm] = useState<LoginRequest>({ identifier: '', password: '' });
   const [errors, setErrors] = useState<FieldError>({});
   const [touched, setTouched] = useState<Partial<Record<keyof LoginRequest, boolean>>>({});
-  const [loading, setLoading] = useState(false);
-  const [apiError, setApiError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
+  
+  // RTK Query mutation hook
+  const [login, { isLoading, error: apiErrorObj }] = useLoginMutation();
+
+  // Helper to extract error message from RTK Query error
+  const apiErrorMessage = apiErrorObj
+    ? (apiErrorObj as any)?.data?.message || 'Invalid credentials. Please try again.'
+    : '';
 
   function handleChange(e: ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
     const updated = { ...form, [name]: value };
     setForm(updated);
-    setApiError('');
-    setSuccessMsg('');
     if (touched[name as keyof LoginRequest]) {
       setErrors(validate(updated));
     }
@@ -66,29 +64,18 @@ export default function LoginPage() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    setLoading(true);
-    setApiError('');
-    setSuccessMsg('');
-
     try {
-      const res = await fetch('/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || 'Invalid credentials. Please try again.');
-      }
-
-      const data: AuthResponse = await res.json();
-      localStorage.setItem('token', data.token);
-      setSuccessMsg(`Welcome back, ${data.username}!`);
-    } catch (err: unknown) {
-      setApiError(err instanceof Error ? err.message : 'Something went wrong.');
-    } finally {
-      setLoading(false);
+      // RTK Query mutation – unwrap() to get the actual response or throw
+      const result = await login(form).unwrap();
+      // Token is already stored in localStorage (if you added transformResponse)
+      // But you can also manually store it here:
+      // localStorage.setItem('accessToken', result.accessToken);
+      // Redirect or show success message
+      console.log('Login success:', result);
+      // e.g. navigate('/dashboard');
+    } catch (err) {
+      // Error is already stored in apiErrorObj, no extra handling needed
+      console.error('Login failed:', err);
     }
   }
 
@@ -107,14 +94,9 @@ export default function LoginPage() {
         <h1 className={styles.heading}>Welcome back</h1>
         <p className={styles.subheading}>Sign in to your account to continue.</p>
 
-        {apiError && (
+        {apiErrorMessage && (
           <div className={styles.apiError}>
-            <span>⚠</span> {apiError}
-          </div>
-        )}
-        {successMsg && (
-          <div className={styles.successMessage}>
-            <span>✓</span> {successMsg}
+            <span>⚠</span> {apiErrorMessage}
           </div>
         )}
 
@@ -147,8 +129,8 @@ export default function LoginPage() {
             onForgotPasswordClick={handleForgotPassword}
           />
 
-          <button type="submit" className={styles.submitButton} disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
+          <button type="submit" className={styles.submitButton} disabled={isLoading}>
+            {isLoading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
 
