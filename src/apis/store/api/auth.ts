@@ -6,11 +6,17 @@ interface AuthResponse {
   [key: string]: any;
 }
 
-interface AuthRequest {
+interface LoginRequest {
   identifier?: string;
   email?: string;
   password: string;
   [key: string]: any;
+}
+interface AuthRequest {
+    username? :string;
+    name? :string;
+    email? :string;
+    password: string;
 }
 
 export const authApi = baseApi.injectEndpoints({
@@ -32,7 +38,7 @@ export const authApi = baseApi.injectEndpoints({
                 }
             }),
 
-            login: builder.mutation<AuthResponse, AuthRequest>({
+            login: builder.mutation<AuthResponse, LoginRequest>({
                 query: (payload) => ({
                     url: '/auth/login',
                     method: 'POST',
