@@ -3,6 +3,7 @@ import { Divider } from "../components/Divider";
 import { PasswordInput } from "../components/PasswordInputProps";
 import { TextInput } from "../components/TextInput";
 import styles from "../login.module.scss";
+import { useRegisterMutation } from "../../../apis/store/api/auth.ts";
 
 interface RegisterRequest {
   username: string;
@@ -96,6 +97,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [register, { isLoading, error: apiErrorObj }] = useRegisterMutation();
 
   const strength = getPasswordStrength(form.password);
 
@@ -127,27 +129,24 @@ export default function RegisterPage() {
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
+    // `register` is the RTK Query mutation hook, `.unwrap()` returns the actual data
+    const data: AuthResponse = await register(form).unwrap();
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || 'Registration failed. Please try again.');
-      }
+    // Tokens are already stored in localStorage inside transformResponse,
+    // but if you need to store an extra 'token' field, do it here.
+    // For consistency, use accessToken or refreshToken.
+    // Example: localStorage.setItem('token', data.accessToken);
 
-      const data: AuthResponse = await res.json();
-      localStorage.setItem('token', data.token);
-      setSuccessMsg(`Account created! Welcome, ${data.username} 🎉`);
-      setForm(EMPTY_FORM);
-      setTouched({});
-    } catch (err: unknown) {
-      setApiError(err instanceof Error ? err.message : 'Something went wrong.');
-    } finally {
-      setLoading(false);
-    }
+    setSuccessMsg(`Account created! Welcome, ${data.username ?? 'User'} 🎉`);
+    setForm(EMPTY_FORM);
+    setTouched({});
+  } catch (err: unknown) {
+    // RTK Query errors are thrown by unwrap() and contain the server error message
+    const errorMessage =
+      err instanceof Error ? err.message : 'Something went wrong.';
+    setApiError(errorMessage);
+  } finally {
+    setLoading(false);
   }
 
   const navigateToLogin = () => {
