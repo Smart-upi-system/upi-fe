@@ -1,10 +1,15 @@
-import { useState,useEffect,useRef  } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { ChangeEvent } from "react";
 import Avatar from "./components/Avatar";
 import KycBadge from "./components/KycBadge";
 import SectionCard from "./components/SectionCard";
 import Field from "./components/Field";
-import { Wallet } from "../../wallet/Wallet";            // <-- import Wallet modal
+import { Wallet } from "../../wallet/Wallet";
+import {
+  useGetProfileQuery,
+  useUpdateProfileMutation,
+  useUpdateKycMutation,
+} from "../../api/usersApi";
 import styles from "./ProfilePage.module.scss";
 
 type KycStatus = "PENDING" | "VERIFIED" | "REJECTED";
@@ -29,7 +34,7 @@ interface UserProfile {
   updatedAt: string;
 }
 
-// ── Seed data ────────────────────────────────────────────────────────────────
+// ── Seed / fallback data ──────────────────────────────────────────────────────
 
 const INITIAL_PROFILE: UserProfile = {
   id: "prf_8b3e1f09",
@@ -51,47 +56,104 @@ const INITIAL_PROFILE: UserProfile = {
   updatedAt: "2025-05-22T14:07:00",
 };
 
-  
-// ── Main component ───────────────────────────────────────────────────────────
+// ── Profile fields that go to /users/update-profile ──────────────────────────
+type ProfileField = "firstName" | "lastName" | "phone" | "profilePictureUrl" | "address" | "city" | "state" | "pincode";
+// ── KYC fields that go to /users/update-kyc ───────────────────────────────────
+type KycField = "kycStatus" | "kycDocumentUrl";
+
+const PROFILE_FIELDS = new Set<string>([
+  "firstName", "lastName", "phone", "profilePictureUrl",
+  "address", "city", "state", "pincode",
+]);
+const KYC_FIELDS = new Set<string>(["kycStatus", "kycDocumentUrl"]);
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function UserProfilePage() {
+  // ── Remote data ──
+  const { data: remoteProfile } = useGetProfileQuery();
+  const [updateProfile] = useUpdateProfileMutation();
+  const [updateKyc] = useUpdateKycMutation();
+
+  // ── Local state ──
   const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
-  const [saved, setSaved] = useState(false);
-  const [walletOpen, setWalletOpen] = useState(false);   // <-- modal state
+  const [activeField, setActiveField] = useState<keyof UserProfile | null>(null);
+  const [walletOpen, setWalletOpen] = useState(false);
   const [qrDropdownOpen, setQrDropdownOpen] = useState(false);
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  function update<K extends keyof UserProfile>(
-    key: K,
-    value: UserProfile[K]
-  ) {
+  // Sync remote data into local state once loaded
+  useEffect(() => {
+    if (remoteProfile) {
+      setProfile((prev) => ({ ...prev, ...remoteProfile }));
+    }
+  }, [remoteProfile]);
+
+  // Close QR dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setQrDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ── Field helpers ─────────────────────────────────────────────────────────
+
+  function update<K extends keyof UserProfile>(key: K, value: UserProfile[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
-    setSaved(false);
   }
 
   function handleText(key: keyof UserProfile) {
     return (
-      e: ChangeEvent<
-        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-      >
+      e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => update(key, e.target.value as UserProfile[typeof key]);
   }
 
-  function handleSave() {
-    console.log("Saving profile:", profile);
-    setSaved(true);
+  /**
+   * Called when a field is deactivated (blur / outside click / Escape).
+   * Fires the appropriate API mutation for the changed field.
+   */
+  const handleDeactivate = useCallback(
+    async (field: keyof UserProfile) => {
+      setActiveField(null);
+
+      if (PROFILE_FIELDS.has(field)) {
+        try {
+          await updateProfile({
+            [field]: profile[field],
+          } as Record<ProfileField, string>).unwrap();
+        } catch (err) {
+          console.error("Failed to update profile:", err);
+        }
+      } else if (KYC_FIELDS.has(field)) {
+        try {
+          await updateKyc({
+            [field]: profile[field],
+          } as Record<KycField, string>).unwrap();
+        } catch (err) {
+          console.error("Failed to update KYC:", err);
+        }
+      }
+    },
+    [profile, updateProfile, updateKyc]
+  );
+
+  // ── Avatar upload ─────────────────────────────────────────────────────────
+
+  async function handlePictureChange(objectUrl: string) {
+    update("profilePictureUrl", objectUrl);
+    try {
+      await updateProfile({ profilePictureUrl: objectUrl }).unwrap();
+    } catch (err) {
+      console.error("Failed to update picture:", err);
+    }
   }
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setQrDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
+  // ── Misc helpers ──────────────────────────────────────────────────────────
 
   const displayName =
     `${profile.firstName} ${profile.lastName}`.trim() || "User";
@@ -102,46 +164,54 @@ export default function UserProfilePage() {
       timeStyle: "short",
     });
 
-    
+  // Convenience: props for a click-to-edit field
+  function editProps(key: keyof UserProfile) {
+    return {
+      editing: activeField === key,
+      onActivate: () => setActiveField(key),
+      onDeactivate: () => handleDeactivate(key),
+      displayValue: String(profile[key] ?? ""),
+    };
+  }
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.profilePage}>
+      {/* ── Header ── */}
       <div className={styles.profileHeader}>
         <Avatar
           firstName={profile.firstName}
           lastName={profile.lastName}
           pictureUrl={profile.profilePictureUrl}
+          onPictureChange={handlePictureChange}
         />
 
         <div>
           <h1>{displayName}</h1>
-
           <p className={styles.upiId}>{profile.upiID}</p>
-
           <KycBadge status={profile.kycStatus} />
         </div>
 
-         <button
+        <button
           className={styles.walletButton}
           onClick={() => setWalletOpen(true)}
         >
           💼 View Wallets
         </button>
 
-        {/* Wallet button */}
         <div className={styles.walletButtonWrapper} ref={dropdownRef}>
           <button
             className={styles.walletButton}
             onClick={() => setQrDropdownOpen(!qrDropdownOpen)}
           >
-            View Qr
+            View QR
           </button>
           {qrDropdownOpen && (
             <div className={styles.qrDropdown}>
               <div className={styles.qrCode}>
-                {/* Example QR code – replace with real UPI/link */}
                 <img
-                  src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=arjun.rao@uws&pn=Arjun%20Rao&am=0&cu=INR"
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=${encodeURIComponent(profile.upiID)}&pn=${encodeURIComponent(displayName)}&am=0&cu=INR`}
                   alt="UPI QR Code"
                   width="120"
                   height="120"
@@ -151,13 +221,12 @@ export default function UserProfilePage() {
             </div>
           )}
         </div>
-     
-    
       </div>
 
+      {/* ── Personal info ── */}
       <SectionCard icon="👤" title="Personal info">
         <div className={styles.grid}>
-          <Field label="First name" id="firstName">
+          <Field label="First name" id="firstName" {...editProps("firstName")}>
             <input
               id="firstName"
               type="text"
@@ -167,7 +236,7 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="Last name" id="lastName">
+          <Field label="Last name" id="lastName" {...editProps("lastName")}>
             <input
               id="lastName"
               type="text"
@@ -177,7 +246,7 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="Phone" id="phone">
+          <Field label="Phone" id="phone" {...editProps("phone")}>
             <input
               id="phone"
               type="tel"
@@ -194,9 +263,7 @@ export default function UserProfilePage() {
                   profile.active ? styles.active : styles.inactive
                 }`}
               />
-
               <span>{profile.active ? "Active" : "Inactive"}</span>
-
               <input
                 type="checkbox"
                 checked={profile.active}
@@ -207,9 +274,10 @@ export default function UserProfilePage() {
         </div>
       </SectionCard>
 
+      {/* ── UPI & wallet ── */}
       <SectionCard icon="📱" title="UPI & wallet">
         <div className={styles.grid}>
-          <Field label="UPI ID" full>
+          <Field label="UPI ID" full readOnly>
             <input
               type="text"
               className={`${styles.input} ${styles.mono}`}
@@ -218,17 +286,16 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="Wallet ID" full>
-            <div className={styles.walletBox}>
-              🪙 {profile.walletId}
-            </div>
+          <Field label="Wallet ID" full readOnly>
+            <div className={styles.walletBox}>🪙 {profile.walletId}</div>
           </Field>
         </div>
       </SectionCard>
 
+      {/* ── Address ── */}
       <SectionCard icon="📍" title="Address">
         <div className={styles.grid}>
-          <Field label="Street address" full>
+          <Field label="Street address" full {...editProps("address")}>
             <textarea
               rows={2}
               className={styles.input}
@@ -237,8 +304,9 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="City">
+          <Field label="City" id="city" {...editProps("city")}>
             <input
+              id="city"
               type="text"
               className={styles.input}
               value={profile.city}
@@ -246,8 +314,9 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="State">
+          <Field label="State" id="state" {...editProps("state")}>
             <input
+              id="state"
               type="text"
               className={styles.input}
               value={profile.state}
@@ -255,8 +324,9 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="Pincode">
+          <Field label="Pincode" id="pincode" {...editProps("pincode")}>
             <input
+              id="pincode"
               type="text"
               className={styles.input}
               value={profile.pincode}
@@ -266,15 +336,23 @@ export default function UserProfilePage() {
         </div>
       </SectionCard>
 
+      {/* ── KYC verification ── */}
       <SectionCard icon="🛡️" title="KYC verification">
         <div className={styles.grid}>
-          <Field label="KYC status">
+          <Field
+            label="KYC status"
+            id="kycStatus"
+            {...editProps("kycStatus")}
+            displayValue={profile.kycStatus}
+          >
             <select
+              id="kycStatus"
               className={styles.input}
               value={profile.kycStatus}
-              onChange={(e) =>
-                update("kycStatus", e.target.value as KycStatus)
-              }
+              onChange={(e) => {
+                update("kycStatus", e.target.value as KycStatus);
+              }}
+              onBlur={() => handleDeactivate("kycStatus")}
             >
               <option value="PENDING">Pending</option>
               <option value="VERIFIED">Verified</option>
@@ -282,8 +360,13 @@ export default function UserProfilePage() {
             </select>
           </Field>
 
-          <Field label="KYC document URL">
+          <Field
+            label="KYC document URL"
+            id="kycDocumentUrl"
+            {...editProps("kycDocumentUrl")}
+          >
             <input
+              id="kycDocumentUrl"
               type="url"
               className={styles.input}
               value={profile.kycDocumentUrl}
@@ -291,8 +374,13 @@ export default function UserProfilePage() {
             />
           </Field>
 
-          <Field label="Profile picture URL">
+          <Field
+            label="Profile picture URL"
+            id="profilePictureUrl"
+            {...editProps("profilePictureUrl")}
+          >
             <input
+              id="profilePictureUrl"
               type="url"
               className={styles.input}
               value={profile.profilePictureUrl}
@@ -302,6 +390,7 @@ export default function UserProfilePage() {
         </div>
       </SectionCard>
 
+      {/* ── System info ── */}
       <SectionCard icon="ℹ️" title="System info" muted>
         <div className={styles.systemGrid}>
           {[
@@ -312,33 +401,11 @@ export default function UserProfilePage() {
           ].map(({ label, value }) => (
             <div key={label}>
               <span className={styles.systemLabel}>{label}</span>
-
               <span className={styles.systemValue}>{value}</span>
             </div>
           ))}
         </div>
       </SectionCard>
-
-      <div className={styles.actions}>
-        <button
-          className={`${styles.btn} ${styles.secondary}`}
-          onClick={() => {
-            setProfile(INITIAL_PROFILE);
-            setSaved(false);
-          }}
-        >
-          Reset
-        </button>
-
-        <button
-          className={`${styles.btn} ${styles.primary} ${
-            saved ? styles.saved : ""
-          }`}
-          onClick={handleSave}
-        >
-          {saved ? "✓ Saved" : "Save changes"}
-        </button>
-      </div>
 
       {/* Wallet Modal */}
       <Wallet open={walletOpen} onClose={() => setWalletOpen(false)} />
