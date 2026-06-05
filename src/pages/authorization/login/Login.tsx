@@ -1,9 +1,10 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, ChangeEvent, FormEvent, useCallback } from 'react';
 import { TextInput } from '../components/TextInput';
 import { PasswordInput } from '../components/PasswordInputProps';
 import { Divider } from '../components/Divider';
 import { useLoginMutation } from '../../../apis/store/api/auth.ts';
 import styles from '../login.module.scss';
+import { useNavigate } from 'react-router-dom';
 
 // ── Types (same as before) ───────────────────────────────────────────────────
 
@@ -32,6 +33,17 @@ export default function LoginPage() {
   const [form, setForm] = useState<LoginRequest>({ identifier: '', password: '' });
   const [errors, setErrors] = useState<FieldError>({});
   const [touched, setTouched] = useState<Partial<Record<keyof LoginRequest, boolean>>>({});
+  const navigate = useNavigate();
+
+  // ── Navigation helper ──
+  const navigateToTransaction = useCallback(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      navigate("/transaction", { replace: true });
+    } else {
+      console.warn('No token found. Cannot navigate to transaction.');
+    }
+  }, [navigate]);
   
   // RTK Query mutation hook
   const [login, { isLoading, error: apiErrorObj }] = useLoginMutation();
@@ -72,7 +84,7 @@ export default function LoginPage() {
       // localStorage.setItem('accessToken', result.accessToken);
       // Redirect or show success message
       console.log('Login success:', result);
-      // e.g. navigate('/dashboard');
+      navigateToTransaction();
     } catch (err) {
       // Error is already stored in apiErrorObj, no extra handling needed
       console.error('Login failed:', err);

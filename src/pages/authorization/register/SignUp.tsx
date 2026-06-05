@@ -1,9 +1,10 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useCallback } from "react";
 import { Divider } from "../components/Divider";
 import { PasswordInput } from "../components/PasswordInputProps";
 import { TextInput } from "../components/TextInput";
 import styles from "../login.module.scss";
 import { useRegisterMutation } from "../../../apis/store/api/auth.ts";
+import { useNavigate } from "react-router-dom";
 
 interface RegisterRequest {
   username: string;
@@ -98,7 +99,22 @@ export default function RegisterPage() {
   const [touched, setTouched] = useState<Partial<Record<keyof RegisterRequest, boolean>>>({});
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [register, { isLoading }] = useRegisterMutation(); // removed dead `loading` state + `error: apiErrorObj`
+  const [register, { isLoading }] = useRegisterMutation();
+   const navigate = useNavigate();
+
+  // ── Navigation helpers ──
+  const navigateToTransaction = useCallback(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      navigate("/transaction", { replace: true });
+    } else {
+      console.warn('No token found. Cannot navigate to transaction.');
+    }
+  }, [navigate]);
+
+  const navigateToLogin = useCallback(() => {
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const strength = getPasswordStrength(form.password);
 
@@ -132,6 +148,10 @@ export default function RegisterPage() {
       setSuccessMsg(`Account created! Welcome, ${result.username ?? 'User'} 🎉`);
       setForm(EMPTY_FORM);
       setTouched({});
+      // Navigate to transaction if token was stored, otherwise to login
+      setTimeout(() => {
+        navigateToTransaction();
+      }, 1500);
     } catch (err: unknown) {
       // Read the error message directly from the thrown RTK Query error
       const errorMessage =
@@ -141,10 +161,6 @@ export default function RegisterPage() {
       console.error('Registration failed:', err);
     }
   }
-
-  const navigateToLogin = () => {
-    alert('Navigate to /login');
-  };
 
   return (
     <div className={styles.page}>
@@ -234,7 +250,7 @@ export default function RegisterPage() {
 
         <p className={styles.footer}>
           Already have an account?{' '}
-          <button type="button" className={styles.link} onClick={navigateToLogin}>
+          <button type="button" className={styles.link} onClick={() => navigateToLogin()}>
             Sign in
           </button>
         </p>

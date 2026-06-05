@@ -1,15 +1,16 @@
-import { useState, useEffect, useRef, useCallback } from "react";
 import type { ChangeEvent } from "react";
-import Avatar from "./components/Avatar";
-import KycBadge from "./components/KycBadge";
-import SectionCard from "./components/SectionCard";
-import Field from "./components/Field";
-import { Wallet } from "../../wallet/Wallet";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   useGetProfileQuery,
-  useUpdateProfileMutation,
   useUpdateKycMutation,
-} from "../../api/usersApi";
+  useUpdateProfileMutation,
+} from "../../apis/store/api/users";
+import { Wallet } from "../../wallet/Wallet";
+import Avatar from "./components/Avatar";
+import Field from "./components/Field";
+import KycBadge from "./components/KycBadge";
+import SectionCard from "./components/SectionCard";
 import styles from "./ProfilePage.module.scss";
 
 type KycStatus = "PENDING" | "VERIFIED" | "REJECTED";
@@ -34,28 +35,6 @@ interface UserProfile {
   updatedAt: string;
 }
 
-// ── Seed / fallback data ──────────────────────────────────────────────────────
-
-const INITIAL_PROFILE: UserProfile = {
-  id: "prf_8b3e1f09",
-  userId: "usr_d4f7a2c1",
-  firstName: "Arjun",
-  lastName: "Rao",
-  upiID: "arjun.rao@uws",
-  phone: "+91 98765 43210",
-  kycStatus: "PENDING",
-  kycDocumentUrl: "https://cdn.example.com/kyc/arjun_rao_id.pdf",
-  profilePictureUrl: "",
-  address: "12, Koregaon Park Annexe, Lane 7",
-  city: "Pune",
-  state: "Maharashtra",
-  pincode: "411036",
-  walletId: "wlt_9f3c2a1b-4d7e-4891-b663-52dc7a08ef14",
-  active: true,
-  createdAt: "2024-11-03T09:41:00",
-  updatedAt: "2025-05-22T14:07:00",
-};
-
 // ── Profile fields that go to /users/update-profile ──────────────────────────
 type ProfileField = "firstName" | "lastName" | "phone" | "profilePictureUrl" | "address" | "city" | "state" | "pincode";
 // ── KYC fields that go to /users/update-kyc ───────────────────────────────────
@@ -70,13 +49,32 @@ const KYC_FIELDS = new Set<string>(["kycStatus", "kycDocumentUrl"]);
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function UserProfilePage() {
+  const navigate = useNavigate();
+
+  // ── Navigation helper ──
+  const navigateToLogin = useCallback(() => {
+    navigate("/login", { replace: true });
+  }, [navigate]);
+
+  const navigateToTransaction = useCallback(() => {
+    navigate("/transaction", { replace: true });
+  }, [navigate]);
+
+  // ── Auth guard ──
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigateToLogin();
+    }
+  }, [navigateToLogin]);
+
   // ── Remote data ──
   const { data: remoteProfile } = useGetProfileQuery();
   const [updateProfile] = useUpdateProfileMutation();
   const [updateKyc] = useUpdateKycMutation();
 
-  // ── Local state ──
-  const [profile, setProfile] = useState<UserProfile>(INITIAL_PROFILE);
+  // ── Local state (no seed data — driven entirely by API) ──
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [activeField, setActiveField] = useState<keyof UserProfile | null>(null);
   const [walletOpen, setWalletOpen] = useState(false);
   const [qrDropdownOpen, setQrDropdownOpen] = useState(false);
@@ -86,7 +84,12 @@ export default function UserProfilePage() {
   // Sync remote data into local state once loaded
   useEffect(() => {
     if (remoteProfile) {
-      setProfile((prev) => ({ ...prev, ...remoteProfile }));
+      setProfile((prev) => {
+        if (!prev) {
+          return { ...remoteProfile } as UserProfile;
+        }
+        return { ...prev, ...remoteProfile } as UserProfile;
+      });
     }
   }, [remoteProfile]);
 
@@ -104,7 +107,7 @@ export default function UserProfilePage() {
   // ── Field helpers ─────────────────────────────────────────────────────────
 
   function update<K extends keyof UserProfile>(key: K, value: UserProfile[K]) {
-    setProfile((prev) => ({ ...prev, [key]: value }));
+    setProfile((prev) => prev ? { ...prev, [key]: value } : prev);
   }
 
   function handleText(key: keyof UserProfile) {
@@ -120,6 +123,7 @@ export default function UserProfilePage() {
   const handleDeactivate = useCallback(
     async (field: keyof UserProfile) => {
       setActiveField(null);
+      if (!profile) return;
 
       if (PROFILE_FIELDS.has(field)) {
         try {
@@ -153,16 +157,16 @@ export default function UserProfilePage() {
     }
   }
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+
+  if (!profile) {
+    return <div className={styles.profilePage}>Loading…</div>;
+  }
+
   // ── Misc helpers ──────────────────────────────────────────────────────────
 
   const displayName =
     `${profile.firstName} ${profile.lastName}`.trim() || "User";
-
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString("en-IN", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
 
   // Convenience: props for a click-to-edit field
   function editProps(key: keyof UserProfile) {
@@ -170,7 +174,7 @@ export default function UserProfilePage() {
       editing: activeField === key,
       onActivate: () => setActiveField(key),
       onDeactivate: () => handleDeactivate(key),
-      displayValue: String(profile[key] ?? ""),
+      displayValue: String(profile![key] ?? ""),
     };
   }
 
@@ -180,6 +184,26 @@ export default function UserProfilePage() {
     <div className={styles.profilePage}>
       {/* ── Header ── */}
       <div className={styles.profileHeader}>
+        <button
+          onClick={() => navigateToTransaction()}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 8 }}
+          aria-label="Go to transactions"
+        >
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="12 1 12 23"></polyline>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </button>
+
         <Avatar
           firstName={profile.firstName}
           lastName={profile.lastName}
@@ -257,19 +281,9 @@ export default function UserProfilePage() {
           </Field>
 
           <Field label="Account status">
-            <div className={styles.statusRow}>
-              <div
-                className={`${styles.statusDot} ${
-                  profile.active ? styles.active : styles.inactive
-                }`}
-              />
-              <span>{profile.active ? "Active" : "Inactive"}</span>
-              <input
-                type="checkbox"
-                checked={profile.active}
-                onChange={(e) => update("active", e.target.checked)}
-              />
-            </div>
+            <span className={profile.active ? styles.statusActive : styles.statusInactive}>
+              {profile.active ? "Active" : "Inactive"}
+            </span>
           </Field>
         </div>
       </SectionCard>
@@ -284,10 +298,6 @@ export default function UserProfilePage() {
               value={profile.upiID}
               readOnly
             />
-          </Field>
-
-          <Field label="Wallet ID" full readOnly>
-            <div className={styles.walletBox}>🪙 {profile.walletId}</div>
           </Field>
         </div>
       </SectionCard>
@@ -373,39 +383,19 @@ export default function UserProfilePage() {
               onChange={handleText("kycDocumentUrl")}
             />
           </Field>
-
-          <Field
-            label="Profile picture URL"
-            id="profilePictureUrl"
-            {...editProps("profilePictureUrl")}
-          >
-            <input
-              id="profilePictureUrl"
-              type="url"
-              className={styles.input}
-              value={profile.profilePictureUrl}
-              onChange={handleText("profilePictureUrl")}
-            />
-          </Field>
         </div>
       </SectionCard>
 
-      {/* ── System info ── */}
-      <SectionCard icon="ℹ️" title="System info" muted>
-        <div className={styles.systemGrid}>
-          {[
-            { label: "Profile ID", value: profile.id },
-            { label: "User ID", value: profile.userId },
-            { label: "Created at", value: formatDateTime(profile.createdAt) },
-            { label: "Updated at", value: formatDateTime(profile.updatedAt) },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <span className={styles.systemLabel}>{label}</span>
-              <span className={styles.systemValue}>{value}</span>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
+      {/* ── Logout ── */}
+      <button
+        className={styles.logoutButton}
+        onClick={() => {
+          localStorage.removeItem("accessToken");
+          navigateToLogin();
+        }}
+      >
+        🚪 Logout
+      </button>
 
       {/* Wallet Modal */}
       <Wallet open={walletOpen} onClose={() => setWalletOpen(false)} />
