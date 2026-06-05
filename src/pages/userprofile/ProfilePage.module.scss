@@ -170,6 +170,109 @@ $shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
   }
 }
 
+// ─────────────────────────────────────────────
+// Append these rules to ProfilePage.module.scss
+// ─────────────────────────────────────────────
+
+// ── Avatar upload overlay ──────────────────────────────────────────────────
+
+.avatarEditable {
+  cursor: pointer;
+  position: relative;
+
+  &:hover .avatarOverlay {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-info, #378add);
+    outline-offset: 2px;
+  }
+}
+
+.avatarOverlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  pointer-events: none;
+}
+
+.avatarFileInput {
+  display: none;
+}
+
+// ── Click-to-edit field ────────────────────────────────────────────────────
+
+// Base editable field — no extra chrome until hover
+.fieldEditable {
+  position: relative;
+}
+
+// The read-only display row (shown when NOT editing)
+.fieldReadOnly {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 38px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover {
+    border-color: var(--color-border-secondary, rgba(0, 0, 0, 0.15));
+    background: var(--color-background-secondary, #f5f5f5);
+
+    .fieldPencil {
+      opacity: 1;
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-border-info, #378add);
+    box-shadow: 0 0 0 3px rgba(55, 138, 221, 0.15);
+  }
+}
+
+.fieldDisplayValue {
+  flex: 1;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+// Pencil icon — hidden until row is hovered
+.fieldPencil {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  color: var(--color-text-secondary);
+  transition: opacity 0.15s;
+}
+
+// When editing: add a subtle focus ring around the whole field
+.fieldEditing {
+  input,
+  textarea,
+  select {
+    border-color: var(--color-border-info, #378add) !important;
+    box-shadow: 0 0 0 3px rgba(55, 138, 221, 0.15);
+  }
+}
+
 // ==========================================
 // KYC Badge component
 // ==========================================
@@ -398,6 +501,20 @@ textarea.input {
   color: $gray-800;
   font-family: monospace;
   word-break: break-all;
+}
+.logoutButton {
+  margin-top: 1rem;
+  padding: 0.6rem 1.25rem;
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+
+  &:hover {
+    background: #fecaca;
+  }
 }
 
 // ==========================================

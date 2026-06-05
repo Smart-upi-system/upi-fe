@@ -1,9 +1,10 @@
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useCallback } from "react";
 import { Divider } from "../components/Divider";
 import { PasswordInput } from "../components/PasswordInputProps";
 import { TextInput } from "../components/TextInput";
 import styles from "../login.module.scss";
 import { useRegisterMutation } from "../../../apis/store/api/auth.ts";
+import { useNavigate } from "react-router-dom";
 
 interface RegisterRequest {
   username: string;
@@ -12,11 +13,13 @@ interface RegisterRequest {
   password: string;
 }
 
-interface AuthResponse {
-  token: string;
-  username: string;
-  email: string;
-}
+// interface AuthResponse {
+//   token: string;
+//   username: string;
+//   email: string;
+//   accessToken?: string;   // added
+//   refreshToken?: string;  // added
+// }
 
 type FieldErrors = Partial<Record<keyof RegisterRequest, string>>;
 
@@ -94,10 +97,24 @@ export default function RegisterPage() {
   const [form, setForm] = useState<RegisterRequest>(EMPTY_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof RegisterRequest, boolean>>>({});
-  const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [register, { isLoading, error: apiErrorObj }] = useRegisterMutation();
+  const [register, { isLoading }] = useRegisterMutation();
+   const navigate = useNavigate();
+
+  // ── Navigation helpers ──
+  const navigateToTransaction = useCallback(() => {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      navigate("/transaction", { replace: true });
+    } else {
+      console.warn('No token found. Cannot navigate to transaction.');
+    }
+  }, [navigate]);
+
+  const navigateToLogin = useCallback(() => {
+    navigate("/login", { replace: true });
+  }, [navigate]);
 
   const strength = getPasswordStrength(form.password);
 
@@ -118,40 +135,32 @@ export default function RegisterPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const allTouched = { username: true, name: true, email: true, password: true };
-    setTouched(allTouched);
+    setTouched({ username: true, name: true, email: true, password: true });
     const errs = validate(form);
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
 
-    setLoading(true);
     setApiError('');
     setSuccessMsg('');
 
     try {
-    // `register` is the RTK Query mutation hook, `.unwrap()` returns the actual data
-    const data: AuthResponse = await register(form).unwrap();
-
-    // Tokens are already stored in localStorage inside transformResponse,
-    // but if you need to store an extra 'token' field, do it here.
-    // For consistency, use accessToken or refreshToken.
-    // Example: localStorage.setItem('token', data.accessToken);
-
-    setSuccessMsg(`Account created! Welcome, ${data.username ?? 'User'} 🎉`);
-    setForm(EMPTY_FORM);
-    setTouched({});
-  } catch (err: unknown) {
-    // RTK Query errors are thrown by unwrap() and contain the server error message
-    const errorMessage =
-      err instanceof Error ? err.message : 'Something went wrong.';
-    setApiError(errorMessage);
-  } finally {
-    setLoading(false);
+      const result = await register(form).unwrap();
+      setSuccessMsg(`Account created! Welcome, ${result.username ?? 'User'} 🎉`);
+      setForm(EMPTY_FORM);
+      setTouched({});
+      // Navigate to transaction if token was stored, otherwise to login
+      setTimeout(() => {
+        navigateToTransaction();
+      }, 1500);
+    } catch (err: unknown) {
+      // Read the error message directly from the thrown RTK Query error
+      const errorMessage =
+        (err as any)?.data?.message ?? // server-side message
+        (err instanceof Error ? err.message : 'Something went wrong.');
+      setApiError(errorMessage);
+      console.error('Registration failed:', err);
+    }
   }
-
-  const navigateToLogin = () => {
-    alert('Navigate to /login');
-  };
 
   return (
     <div className={styles.page}>
@@ -232,8 +241,8 @@ export default function RegisterPage() {
             strength={strength}
           />
 
-          <button type="submit" className={styles.submitButton} disabled={loading}>
-            {loading ? 'Creating account…' : 'Create account'}
+          <button type="submit" className={styles.submitButton} disabled={isLoading}>
+            {isLoading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
 
@@ -241,7 +250,7 @@ export default function RegisterPage() {
 
         <p className={styles.footer}>
           Already have an account?{' '}
-          <button type="button" className={styles.link} onClick={navigateToLogin}>
+          <button type="button" className={styles.link} onClick={() => navigateToLogin()}>
             Sign in
           </button>
         </p>
