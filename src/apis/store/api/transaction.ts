@@ -1,4 +1,4 @@
-import { TransactionRow } from "../../../wallet/components/TransactionRow";
+// import { TransactionRow } from "../../../wallet/components/TransactionRow";
 import { baseApi } from "./baseApi";
 
 interface TransferRequest {
@@ -28,7 +28,7 @@ interface TransactionResponse {
 }
 
 interface TransactionHistoryResponse {
-   transactions: TransactionResponse[];   // array, not List
+   transaction: TransactionResponse[];   // array, not List
   currentPage: number;
   totalPages: number;
   totalElements: number;
@@ -51,7 +51,7 @@ export const transactionApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
         transfer : builder.mutation<TransactionResponse, TransferRequest>({
             query : (payload)=>({
-                url: '/transactions/transfer',
+                url: '/transaction/transfer',
                 method: 'POST',
                 body: payload
              }),
@@ -64,7 +64,7 @@ export const transactionApi = baseApi.injectEndpoints({
 
         getTransaction : builder.query<TransactionResponse, string>({
             query : (transactionId)=>({
-                url : `/transactions/${transactionId}`,
+                url : `/transaction/${transactionId}`,
                 method : 'GET'
              }),
              transformResponse : (response : TransactionResponse)=>{
@@ -74,7 +74,7 @@ export const transactionApi = baseApi.injectEndpoints({
          
         getTransactionHistory : builder.query<TransactionHistoryResponse, { page?: number; size?: number}>({
             query : ({ page = 0, size = 10, })=>({
-                url : `/transactions/history?page=${page}&size=${size}`,
+                url : `/transaction/history?page=${page}&size=${size}`,
                 method : 'GET'
              }),
              transformResponse : (response : TransactionHistoryResponse)=>{
@@ -85,7 +85,7 @@ export const transactionApi = baseApi.injectEndpoints({
 
          deposit : builder.mutation<TransactionResponse, DepositRequest>({
             query :(payload)=>({
-                url: '/transactions/deposit',
+                url: '/transaction/deposit',
                 method: 'POST',
                 body: payload
              }),
