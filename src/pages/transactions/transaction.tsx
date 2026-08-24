@@ -7,6 +7,8 @@ import {
 } from "../../apis/store/api/transaction";
 import { useGetProfileQuery } from "../../apis/store/api/users";
 import { v4 as uuidv4 } from "uuid";
+import { useToast, ToastContainer, toast } from "../../globals/components/Toast";
+import { NotificationBell } from "../../globals/components/NotificationBell";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -237,6 +239,7 @@ const ps: Record<string, React.CSSProperties> = {
 
 export default function Transaction() {
   const navigate = useNavigate();
+  const { toasts, showToast, dismissToast } = useToast();
 
   const { data: profile } = useGetProfileQuery();
 
@@ -256,13 +259,6 @@ export default function Transaction() {
   const [depositAmount, setDepositAmount]   = useState("");
   const [depositDesc, setDepositDesc]       = useState("");
 
-  const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
-
-  function showToast(msg: string, ok: boolean) {
-    setToast({ msg, ok });
-    setTimeout(() => setToast(null), 3000);
-  }
-
   async function handleTransfer() {
     if (!receiverUpiId || !transferAmount) return;
     try {
@@ -272,12 +268,12 @@ export default function Transaction() {
         remarks,
         idempotencyKey: uuidv4(),
       }).unwrap();
-      showToast("Transfer successful!", true);
+      showToast(toast.success("Transfer Successful", `₹${parseFloat(transferAmount).toLocaleString("en-IN")} sent to ${receiverUpiId}`));
       setModal(null);
       setReceiverUpiId(""); setTransferAmount(""); setRemarks("");
       refetch();
     } catch {
-      showToast("Transfer failed. Please try again.", false);
+      showToast(toast.error("Transfer Failed", "Please try again."));
     }
   }
 
@@ -290,12 +286,12 @@ export default function Transaction() {
         idempotencyKey: uuidv4(),
         description: depositDesc,
       }).unwrap();
-      showToast("Deposit successful!", true);
+      showToast(toast.success("Deposit Successful", `₹${parseFloat(depositAmount).toLocaleString("en-IN")} added to your wallet`));
       setModal(null);
       setDepositAmount(""); setDepositDesc("");
       refetch();
     } catch {
-      showToast("Deposit failed. Please try again.", false);
+      showToast(toast.error("Deposit Failed", "Please try again."));
     }
   }
 
@@ -304,12 +300,7 @@ export default function Transaction() {
   return (
     <div style={s.page}>
 
-      {/* ── Toast ── */}
-      {toast && (
-        <div style={{ ...s.toast, background: toast.ok ? "#166534" : "#7f1d1d" }}>
-          {toast.ok ? "✓" : "✗"} {toast.msg}
-        </div>
-      )}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* ── Header ── */}
       <div style={s.header}>
@@ -323,6 +314,7 @@ export default function Transaction() {
           <h1 style={s.title}>Transactions</h1>
         </div>
         <div style={s.actions}>
+          <NotificationBell position="bottom-right" />
           <button style={{ ...s.btn, ...s.btnDeposit }} onClick={() => setModal("deposit")}>
             <DepositIcon /> Deposit
           </button>
