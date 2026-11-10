@@ -6,6 +6,7 @@
   "scripts": {
     "start": "vite",
     "build": "tsc -b && vite build",
+    "test:offline": "node --import tsx --test tests/offline.test.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -14,7 +15,10 @@
   },
   "dependencies": {
     "@reduxjs/toolkit": "^2.12.0",
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
     "axios": "^1.16.1",
+    "qrcode": "^1.5.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-redux": "^9.3.0",
@@ -27,6 +31,7 @@
     "@rolldown/plugin-babel": "^0.2.3",
     "@types/babel__core": "^7.20.5",
     "@types/node": "^24.12.3",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
@@ -35,8 +40,10 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "fake-indexeddb": "^6.2.8",
     "globals": "^17.6.0",
     "sass": "^1.100.0",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
     "vite": "^8.0.12"

@@ -11,6 +11,7 @@ import Avatar from "./components/Avatar";
 import Field from "./components/Field";
 import KycBadge from "./components/KycBadge";
 import SectionCard from "./components/SectionCard";
+import BackendRecipientQr from "./components/BackendRecipientQr";
 import styles from "./ProfilePage.module.scss";
 
 type KycStatus = "PENDING" | "VERIFIED" | "REJECTED";
@@ -225,6 +226,7 @@ export default function UserProfilePage() {
         </button>
 
         <div className={styles.walletButtonWrapper} ref={dropdownRef}>
+          <button className={styles.walletButton} onClick={() => navigate('/offline')}>Offline QR demo</button>
           <button
             className={styles.walletButton}
             onClick={() => setQrDropdownOpen(!qrDropdownOpen)}
@@ -234,12 +236,7 @@ export default function UserProfilePage() {
           {qrDropdownOpen && (
             <div className={styles.qrDropdown}>
               <div className={styles.qrCode}>
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=upi://pay?pa=${encodeURIComponent(profile.upiID)}&pn=${encodeURIComponent(displayName)}&am=0&cu=INR`}
-                  alt="UPI QR Code"
-                  width="120"
-                  height="120"
-                />
+                <BackendRecipientQr />
                 <p className={styles.qrText}>Scan to pay</p>
               </div>
             </div>

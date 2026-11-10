@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { useNotifications, useUnreadCount } from "../../hooks/useNotifications";
+import { useNotifications } from "../../hooks/useNotifications";
 import { NotificationResponse } from "../../apis/store/api/notification";
 
 interface NotificationBellProps {
@@ -16,7 +16,7 @@ export function NotificationBell({ position = "bottom-right", maxPreview = 5 }: 
   const bellRef = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
 
-  const { notifications, unreadCount, markAsRead, isLoading, refetch } = useNotifications(0, maxPreview);
+  const { notifications, unreadCount, markAsRead, isLoading } = useNotifications(0, maxPreview);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -132,8 +132,9 @@ export function NotificationBell({ position = "bottom-right", maxPreview = 5 }: 
   };
 
   return (
-    <div style={s.wrapper} ref={bellRef}>
+    <div style={s.wrapper}>
       <button
+        ref={bellRef}
         style={s.bellButton}
         onClick={() => setIsOpen(!isOpen)}
         aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}

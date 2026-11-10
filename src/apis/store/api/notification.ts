@@ -74,7 +74,7 @@ export const notificationApi = baseApi.injectEndpoints({
         method: "PATCH",
       }),
       transformResponse: (response: MarkAsReadResponse) => response,
-      invalidatesTags: (result, error, notificationId) => [
+      invalidatesTags: (_result, _error, notificationId) => [
         { type: "Notification", id: notificationId },
         { type: "Notification", id: "LIST" },
         { type: "Notification", id: "UNREAD_COUNT" },

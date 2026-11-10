@@ -588,9 +588,11 @@ textarea.input {
   background: white;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  padding: 1rem;
+  padding: 12px;
   z-index: 100;
-  min-width: 150px;
+  box-sizing: border-box;
+  width: 216px;
+  max-width: calc(100vw - 32px);
   border: 1px solid #e8e8e8;
   animation: fadeIn 0.2s ease;
 }
@@ -602,7 +604,12 @@ textarea.input {
   gap: 8px;
 
   img {
-    border-radius: 12px;
+    display: block;
+    box-sizing: border-box;
+    width: 180px;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
     background: white;
     padding: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -637,7 +644,7 @@ textarea.input {
   .qrDropdown {
     right: auto;
     left: 0;
-    width: 100%;
+    max-width: 100%;
   }
 }
 

@@ -1,0 +1,95 @@
+.progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 16px;
+  margin-top: 6px;
+  border: 1px solid #254369;
+  border-radius: 12px;
+  background: #101f35;
+  color: #bfdbfe;
+  font-size: 14px;
+
+  small {
+    color: #94a3b8;
+    font-size: 12px;
+  }
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 220px;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.endpoint {
+  display: grid;
+  place-items: center;
+  flex: 0 0 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #1e3a5f;
+  border: 1px solid #3b82f6;
+  font-size: 18px;
+}
+
+.path {
+  position: relative;
+  flex: 1;
+  height: 28px;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 100%;
+    border-top: 1px dashed #42658e;
+  }
+}
+
+.plane {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  top: 2px;
+  color: #93c5fd;
+  animation: send 1.6s ease-in-out infinite;
+}
+
+@keyframes send {
+  0% { left: 0; opacity: 0; transform: scale(0.8); }
+  20% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; }
+  100% { left: calc(100% - 24px); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plane {
+    animation: none;
+    left: calc(50% - 12px);
+  }
+}
+
+.reversed .plane {
+  animation-direction: reverse;
+  rotate: 180deg;
+}
+
+.finished .plane {
+  animation: none;
+  left: calc(100% - 24px);
+}
+
+.finished.reversed .plane {
+  left: 0;
+  animation: send 1.6s ease-in-out reverse 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finished.reversed .plane { animation: none; }
+}

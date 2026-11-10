@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useGetTransactionHistoryQuery,
   useTransferMutation,
   useDepositMutation,
+  useGetTransactionQuery,
 } from "../../apis/store/api/transaction";
 import { useGetProfileQuery } from "../../apis/store/api/users";
 import { v4 as uuidv4 } from "uuid";
 import { useToast, ToastContainer, toast } from "../../globals/components/Toast";
 import { NotificationBell } from "../../globals/components/NotificationBell";
+import styles from "./TransferMotion.module.scss";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -42,6 +44,7 @@ function statusColor(status: string) {
   switch (status?.toUpperCase()) {
     case "SUCCESS":    return "#22c55e";
     case "FAILED":     return "#ef4444";
+    case "REVERSED":   return "#f59e0b";
     case "PENDING":    return "#f59e0b";
     case "CREDITING":  return "#a78bfa";
     case "DEBITING":   return "#60a5fa";
@@ -246,8 +249,28 @@ export default function Transaction() {
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
-  const { data, isLoading, isError, refetch } = useGetTransactionHistoryQuery({ page, size: pageSize });
-  const [transfer, { isLoading: transferring }] = useTransferMutation();
+  const { data, isLoading, isError, refetch } = useGetTransactionHistoryQuery({ page, size: pageSize }, { pollingInterval: 15000, skipPollingIfUnfocused: true });
+  const [transfer, { isLoading: submitting }] = useTransferMutation();
+  const [submittedTransfer, setSubmittedTransfer] = useState<TransactionResponse | null>(null);
+  const [tracking, setTracking] = useState(false);
+  const { currentData: transferUpdate, isError: trackingError } = useGetTransactionQuery(submittedTransfer?.transactionId ?? "", {
+    skip: !submittedTransfer,
+    pollingInterval: tracking ? 1500 : 0,
+    refetchOnMountOrArgChange: true,
+  });
+  const transferStatus = (transferUpdate ?? submittedTransfer)?.status.toUpperCase();
+  const transferFinished = ["SUCCESS", "FAILED", "REVERSED"].includes(transferStatus ?? "");
+  const transferring = submitting || (!!submittedTransfer && !transferFinished);
+  const transferMessage = trackingError && !transferFinished
+    ? "Waiting for status confirmation…"
+    : ({ INITIATED: "Transfer initiated…", PENDING: "Transfer pending…", VALIDATING: "Validating transfer…", FRAUD_CHECK: "Checking transfer…", DEBITING: "Debiting your wallet…", CREDITING: "Crediting the recipient…", SUCCESS: "Transfer successful", FAILED: "Transfer failed", REVERSED: "Transfer reversed", REVERSING: "Reversing transfer…" } as Record<string, string>)[transferStatus ?? ""] ?? "Sending your money…";
+
+  useEffect(() => {
+    if (transferFinished) {
+      setTracking(false);
+      void refetch();
+    }
+  }, [transferFinished, refetch]);
   const [deposit,  { isLoading: depositing  }] = useDepositMutation();
 
   const [modal, setModal] = useState<ModalMode>(null);
@@ -259,21 +282,31 @@ export default function Transaction() {
   const [depositAmount, setDepositAmount]   = useState("");
   const [depositDesc, setDepositDesc]       = useState("");
 
+  function closeTransfer() {
+    if (submitting) return;
+    setModal(null);
+    if (transferFinished) {
+      setSubmittedTransfer(null);
+      setReceiverUpiId("");
+      setTransferAmount("");
+      setRemarks("");
+    }
+  }
+
   async function handleTransfer() {
-    if (!receiverUpiId || !transferAmount) return;
+    if (transferring || submittedTransfer || !receiverUpiId || !transferAmount) return;
     try {
-      await transfer({
+      const result = await transfer({
         receiverUpiId,
         amount: parseFloat(transferAmount),
         remarks,
         idempotencyKey: uuidv4(),
       }).unwrap();
-      showToast(toast.success("Transfer Successful", `₹${parseFloat(transferAmount).toLocaleString("en-IN")} sent to ${receiverUpiId}`));
-      setModal(null);
-      setReceiverUpiId(""); setTransferAmount(""); setRemarks("");
+      setSubmittedTransfer(result);
+      setTracking(!["SUCCESS", "FAILED", "REVERSED"].includes(result.status.toUpperCase()));
       refetch();
     } catch {
-      showToast(toast.error("Transfer Failed", "Please try again."));
+      showToast(toast.error("Transfer not confirmed", "Check transaction history before trying again."));
     }
   }
 
@@ -444,7 +477,7 @@ export default function Transaction() {
 
       {/* ── Transfer Modal ── */}
       {modal === "transfer" && (
-        <div style={s.overlay} onClick={() => setModal(null)}>
+        <div style={s.overlay} onClick={closeTransfer}>
           <div style={s.modal} onClick={(e) => e.stopPropagation()}>
             <div style={s.modalHeader}>
               <div style={{ ...s.modalIconWrap, background: "#1e3a5f" }}>
@@ -460,6 +493,7 @@ export default function Transaction() {
             <input
               style={s.input}
               placeholder="e.g. friend@uws"
+              disabled={transferring}
               value={receiverUpiId}
               onChange={(e) => setReceiverUpiId(e.target.value)}
             />
@@ -469,6 +503,7 @@ export default function Transaction() {
               type="number"
               placeholder="0.00"
               value={transferAmount}
+              disabled={transferring}
               onChange={(e) => setTransferAmount(e.target.value)}
             />
             <label style={s.label}>Remarks (optional)</label>
@@ -476,12 +511,29 @@ export default function Transaction() {
               style={s.input}
               placeholder="e.g. Dinner split"
               value={remarks}
+              disabled={transferring}
               onChange={(e) => setRemarks(e.target.value)}
             />
+            {(transferring || submittedTransfer) && (
+              <div className={`${styles.progress} ${transferFinished ? styles.finished : ''} ${transferStatus === 'REVERSED' || transferStatus === 'REVERSING' ? styles.reversed : ''}`} role="status" aria-live="polite">
+                <div className={styles.track} aria-hidden="true">
+                  <span className={styles.endpoint}>₹</span>
+                  <span className={styles.path}>
+                    <svg className={styles.plane} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                      <path d="m3 3 19 9-19 9 4-9-4-9Z" />
+                      <path d="M7 12h15" />
+                    </svg>
+                  </span>
+                  <span className={styles.endpoint}>₹</span>
+                </div>
+                <span style={{ color: transferStatus ? statusColor(transferStatus) : undefined }}>{transferMessage}</span>
+                <small>{transferFinished ? (transferUpdate?.failureReason || "Status confirmed by your wallet service.") : "Please wait for confirmation. Do not send again."}</small>
+              </div>
+            )}
             <div style={s.modalActions}>
-              <button style={{ ...s.btn, ...s.btnCancel }} onClick={() => setModal(null)}>Cancel</button>
-              <button style={{ ...s.btn, ...s.btnTransfer }} onClick={handleTransfer} disabled={transferring}>
-                {transferring ? "Sending…" : "Send"}
+              <button style={{ ...s.btn, ...s.btnCancel }} disabled={submitting} onClick={closeTransfer}>{submittedTransfer ? "Close" : "Cancel"}</button>
+              <button style={{ ...s.btn, ...s.btnTransfer }} onClick={transferFinished ? closeTransfer : handleTransfer} disabled={transferring}>
+                {transferring ? "Processing…" : submittedTransfer ? "Finished" : "Send"}
               </button>
             </div>
           </div>

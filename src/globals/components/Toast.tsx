@@ -78,7 +78,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: 
         animation: "slideIn 0.3s ease-out",
       }}
     >
-      <style jsx>{`
+      <style>{`
         @keyframes slideIn {
           from {
             transform: translateX(100%);
