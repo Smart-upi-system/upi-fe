@@ -40,6 +40,26 @@ interface UpdateKycRequest {
 
 export const usersApi =baseApi.injectEndpoints({
     endpoints: (builder) => ({
+        getQrCode: builder.query<string, void>({
+            query: () => ({
+                url: '/users/qr-code',
+                cache: 'no-store',
+                responseHandler: async (response) => {
+                    if (!response.ok) return response.text();
+                    const blob = await response.blob();
+                    if (!blob.type.startsWith('image/') || blob.size > 1024 * 1024) {
+                        throw new Error('Invalid recipient QR image');
+                    }
+                    return new Promise<string>((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(String(reader.result));
+                        reader.onerror = () => reject(reader.error);
+                        reader.readAsDataURL(blob);
+                    });
+                },
+            }),
+            keepUnusedDataFor: 0,
+        }),
         getProfile : builder.query<UserProfileResponse, void>({
             query: () => ({
                 url: '/users/profile',
@@ -77,6 +97,8 @@ export const usersApi =baseApi.injectEndpoints({
 })
 
 export const {
+    useGetQrCodeQuery,
+    useLazyGetQrCodeQuery,
     useGetProfileQuery,
     useUpdateProfileMutation,
     useUpdateKycMutation

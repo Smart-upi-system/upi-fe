@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { WalletCard } from "./components/WalletCard";
 import { TransactionRow } from "./components/TransactionRow";
-import { InfoRow } from "./components/InfoRow";
 import { MOCK_WALLETS, MOCK_TRANSACTIONS } from "./components/data/mockData";
 import { WALLET_META } from "./components/data/constants";
-import { formatAmount, formatDate } from "./components/utils/helper";
+import { formatAmount } from "./components/utils/helper";
+import { useGetWalletsQuery } from "../apis/store/api/wallet";
+import { useGetTransactionHistoryQuery } from "../apis/store/api/transaction";
 import styles from "./Wallet.module.scss";
 
 interface WalletModalProps {
@@ -12,9 +13,19 @@ interface WalletModalProps {
   onClose: () => void;
 }
 
-type Tab = "overview" | "transactions" | "details";
+type Tab = "overview" | "transactions";
 
 export const Wallet = ({ open, onClose }: WalletModalProps) => {
+  const { data: remoteWallets, isLoading, isError, refetch } = useGetWalletsQuery(undefined, { skip: !open });
+  const { data: transactionHistory, isLoading: transactionsLoading } = useGetTransactionHistoryQuery({ page: 0, size: 20 }, { skip: !open });
+  const transactions = transactionHistory?.transactions?.map((t) => ({
+    id: t.transactionId,
+    type: (t.type?.includes("DEBIT") ? "DEBIT" : "CREDIT") as "CREDIT" | "DEBIT",
+    amount: Number(t.amount),
+    description: `${t.type || "Transaction"} · ${t.status}`,
+    timestamp: t.initiatedAt || t.createdAt,
+  })) ?? [];
+  const displayWallets = remoteWallets?.map((w) => ({ ...w, balance: Number(w.balance) })) ?? MOCK_WALLETS;
   const [selectedId, setSelectedId] = useState(MOCK_WALLETS[0].walletId);
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -54,14 +65,14 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
 
   if (!open) return null;
 
-  const wallet = MOCK_WALLETS.find((w) => w.walletId === selectedId) ?? MOCK_WALLETS[0];
+  const wallet = displayWallets.find((w) => w.walletId === selectedId) ?? displayWallets[0];
+  if (!wallet) return null;
   const meta = WALLET_META[wallet.walletType];
-  const totalBalance = MOCK_WALLETS.filter((w) => w.active).reduce((s, w) => s + w.balance, 0);
+  const totalBalance = displayWallets.filter((w) => w.active).reduce((s, w) => s + w.balance, 0);
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "transactions", label: "Transactions" },
-    { key: "details", label: "Details" },
   ];
 
   return (
@@ -72,7 +83,8 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
           <div>
             <h2 className={styles.title}>My Wallets</h2>
             <p className={styles.total}>
-              Total · <strong>{formatAmount(totalBalance)}</strong>
+              Total · <strong>{isLoading ? "Loading…" : formatAmount(totalBalance)}</strong>
+              {isError && <button className={styles.viewAllBtn} onClick={() => refetch()}>Retry</button>}
             </p>
           </div>
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close modal">
@@ -92,7 +104,7 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
             </button>
           )}
           <div className={styles.carousel} ref={carouselRef}>
-            {MOCK_WALLETS.map((w) => (
+            {displayWallets.map((w) => (
               <WalletCard
                 key={w.walletId}
                 wallet={w}
@@ -137,11 +149,6 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
                   <div className={styles.statLabel}>Balance</div>
                 </div>
                 <div className={styles.statItem}>
-                  <div className={styles.statIcon}>🔒</div>
-                  <div className={styles.statValue}>v{wallet.version}</div>
-                  <div className={styles.statLabel}>Version</div>
-                </div>
-                <div className={styles.statItem}>
                   <div className={styles.statIcon}>{meta.emoji}</div>
                   <div className={styles.statValue}>{wallet.walletType}</div>
                   <div className={styles.statLabel}>Type</div>
@@ -169,7 +176,7 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
                   View all →
                 </button>
               </div>
-              {MOCK_TRANSACTIONS.slice(0, 3).map((txn) => (
+              {(transactions.length ? transactions : MOCK_TRANSACTIONS).slice(0, 3).map((txn) => (
                 <TransactionRow key={txn.id} txn={txn} />
               ))}
             </>
@@ -184,26 +191,13 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
                   </button>
                 ))}
               </div>
-              {MOCK_TRANSACTIONS.map((txn) => (
+              {transactionsLoading && <div>Loading transactions…</div>}
+              {(transactions.length ? transactions : MOCK_TRANSACTIONS).map((txn) => (
                 <TransactionRow key={txn.id} txn={txn} />
               ))}
             </>
           )}
 
-          {activeTab === "details" && (
-            <>
-              <InfoRow label="Wallet ID" value={wallet.walletId} mono />
-              <InfoRow label="User ID" value={wallet.userId} mono />
-              <InfoRow label="Type" value={wallet.walletType} />
-              <InfoRow label="Balance" value={formatAmount(wallet.balance)} />
-              <InfoRow label="Version" value={`v${wallet.version} (optimistic lock)`} />
-              <InfoRow label="Status" value={wallet.active ? "Active" : "Inactive"} />
-              {wallet.goalId && <InfoRow label="Goal ID" value={wallet.goalId} mono />}
-              {wallet.goalName && <InfoRow label="Goal name" value={wallet.goalName} />}
-              <InfoRow label="Last updated" value={formatDate(wallet.lastUpdated)} />
-              <InfoRow label="Created at" value={formatDate(wallet.createdAt)} />
-            </>
-          )}
         </div>
 
         <div className={styles.modalFooter}>

@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 import { Wallet } from './wallet/Wallet'
 import Transaction from './pages/transactions/transaction'
 import NotificationsPage from './pages/notifications/NotificationsPage'
+import OfflineQrPage from './offline/OfflineQrPage'
 
 function App() {
 
@@ -13,6 +14,7 @@ function App() {
     <>
     <BrowserRouter>
     <Routes>
+      <Route path="/offline" element={<OfflineQrPage />} />
       <Route path="/userProfile" element={<UserProfilePage />} />
         <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />

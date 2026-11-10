@@ -1,6 +1,7 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 const BASE_URL = 'http://localhost:8080';
+// const BASE_URL = 'http://localhost:4000';
 // console.log('BASE_URL loaded:', BASE_URL, 'VITE_BACKEND_URL:', import.meta.env.VITE_BACKEND_URL);
 console.log('BASE_URL:', BASE_URL); // Add this line temporarily
 export const baseApi = createApi({

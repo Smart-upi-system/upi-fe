@@ -27,8 +27,8 @@ interface TransactionResponse {
     updatedAt: string;
 }
 
-interface TransactionHistoryResponse {
-   transaction: TransactionResponse[];   // array, not List
+export interface TransactionHistoryResponse {
+   transactions: TransactionResponse[];
   currentPage: number;
   totalPages: number;
   totalElements: number;
