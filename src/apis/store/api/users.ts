@@ -43,6 +43,7 @@ export const usersApi =baseApi.injectEndpoints({
         getQrCode: builder.query<string, void>({
             query: () => ({
                 url: '/users/qr-code',
+                cache: 'no-store',
                 responseHandler: async (response) => {
                     if (!response.ok) return response.text();
                     const blob = await response.blob();

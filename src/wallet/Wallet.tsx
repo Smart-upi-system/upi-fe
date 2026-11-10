@@ -1,10 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { WalletCard } from "./components/WalletCard";
 import { TransactionRow } from "./components/TransactionRow";
-import { InfoRow } from "./components/InfoRow";
 import { MOCK_WALLETS, MOCK_TRANSACTIONS } from "./components/data/mockData";
 import { WALLET_META } from "./components/data/constants";
-import { formatAmount, formatDate } from "./components/utils/helper";
+import { formatAmount } from "./components/utils/helper";
 import { useGetWalletsQuery } from "../apis/store/api/wallet";
 import { useGetTransactionHistoryQuery } from "../apis/store/api/transaction";
 import styles from "./Wallet.module.scss";
@@ -14,7 +13,7 @@ interface WalletModalProps {
   onClose: () => void;
 }
 
-type Tab = "overview" | "transactions" | "details";
+type Tab = "overview" | "transactions";
 
 export const Wallet = ({ open, onClose }: WalletModalProps) => {
   const { data: remoteWallets, isLoading, isError, refetch } = useGetWalletsQuery(undefined, { skip: !open });
@@ -74,7 +73,6 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
   const tabs: { key: Tab; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "transactions", label: "Transactions" },
-    { key: "details", label: "Details" },
   ];
 
   return (
@@ -151,11 +149,6 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
                   <div className={styles.statLabel}>Balance</div>
                 </div>
                 <div className={styles.statItem}>
-                  <div className={styles.statIcon}>🔒</div>
-                  <div className={styles.statValue}>v{wallet.version}</div>
-                  <div className={styles.statLabel}>Version</div>
-                </div>
-                <div className={styles.statItem}>
                   <div className={styles.statIcon}>{meta.emoji}</div>
                   <div className={styles.statValue}>{wallet.walletType}</div>
                   <div className={styles.statLabel}>Type</div>
@@ -205,20 +198,6 @@ export const Wallet = ({ open, onClose }: WalletModalProps) => {
             </>
           )}
 
-          {activeTab === "details" && (
-            <>
-              <InfoRow label="Wallet ID" value={wallet.walletId} mono />
-              <InfoRow label="User ID" value={wallet.userId} mono />
-              <InfoRow label="Type" value={wallet.walletType} />
-              <InfoRow label="Balance" value={formatAmount(wallet.balance)} />
-              <InfoRow label="Version" value={`v${wallet.version} (optimistic lock)`} />
-              <InfoRow label="Status" value={wallet.active ? "Active" : "Inactive"} />
-              {wallet.goalId && <InfoRow label="Goal ID" value={wallet.goalId} mono />}
-              {wallet.goalName && <InfoRow label="Goal name" value={wallet.goalName} />}
-              <InfoRow label="Last updated" value={formatDate(wallet.lastUpdated)} />
-              <InfoRow label="Created at" value={formatDate(wallet.createdAt)} />
-            </>
-          )}
         </div>
 
         <div className={styles.modalFooter}>
