@@ -22,6 +22,13 @@ interface UserProfileResponse{
     updatedAt: string; // Assuming it's a date string
 }
 
+export interface QrCodeData {
+    upiId: string;
+    payeeName: string;
+    currency: string;
+    payload: string;
+}
+
 interface UpdateProfileRequest {
     firstName?: string;
     lastName?: string;
@@ -40,6 +47,13 @@ interface UpdateKycRequest {
 
 export const usersApi =baseApi.injectEndpoints({
     endpoints: (builder) => ({
+        getQrCodeData: builder.query<QrCodeData, void>({
+            query: () => ({
+                url: '/users/qr-data',
+                method: 'GET',
+            }),
+            keepUnusedDataFor: 0,
+        }),
         getQrCode: builder.query<string, void>({
             query: () => ({
                 url: '/users/qr-code',
@@ -97,6 +111,8 @@ export const usersApi =baseApi.injectEndpoints({
 })
 
 export const {
+    useGetQrCodeDataQuery,
+    useLazyGetQrCodeDataQuery,
     useGetQrCodeQuery,
     useLazyGetQrCodeQuery,
     useGetProfileQuery,

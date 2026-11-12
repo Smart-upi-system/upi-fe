@@ -6,6 +6,7 @@ interface TransferRequest {
     amount: number;
     remarks: string;
     idempotencyKey: string;
+    upiPin: string;
 }
 
 interface TransactionResponse {
