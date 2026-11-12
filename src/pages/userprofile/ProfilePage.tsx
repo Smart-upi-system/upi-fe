@@ -12,6 +12,7 @@ import Field from "./components/Field";
 import KycBadge from "./components/KycBadge";
 import SectionCard from "./components/SectionCard";
 import BackendRecipientQr from "./components/BackendRecipientQr";
+import UpiPinSettings from "./components/UpiPinSettings";
 import styles from "./ProfilePage.module.scss";
 
 type KycStatus = "PENDING" | "VERIFIED" | "REJECTED";
@@ -297,6 +298,10 @@ export default function UserProfilePage() {
             />
           </Field>
         </div>
+      </SectionCard>
+
+      <SectionCard icon="🔐" title="Security">
+        <UpiPinSettings />
       </SectionCard>
 
       {/* ── Address ── */}

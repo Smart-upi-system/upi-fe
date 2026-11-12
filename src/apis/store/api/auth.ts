@@ -19,6 +19,17 @@ interface AuthRequest {
     password: string;
 }
 
+interface SetUpiPinRequest {
+    currentPassword: string;
+    newPin: string;
+    confirmPin: string;
+}
+
+export interface UpiPinStatus {
+    configured: boolean;
+    locked: boolean;
+}
+
 export const authApi = baseApi.injectEndpoints({
     endpoints: (builder) => ({
             register: builder.mutation<AuthResponse, AuthRequest>({
@@ -71,7 +82,22 @@ export const authApi = baseApi.injectEndpoints({
     }
 }
 
-            })
+            }),
+
+            getUpiPinStatus: builder.query<UpiPinStatus, void>({
+                query: () => ({
+                    url: '/auth/upi-pin/status',
+                    method: 'GET',
+                }),
+            }),
+
+            setUpiPin: builder.mutation<UpiPinStatus, SetUpiPinRequest>({
+                query: (payload) => ({
+                    url: '/auth/upi-pin',
+                    method: 'PUT',
+                    body: payload,
+                }),
+            }),
 
         })
 });
@@ -80,4 +106,6 @@ export const {
     useRegisterMutation,
     useLoginMutation,
     useLogoutMutation,
+    useGetUpiPinStatusQuery,
+    useSetUpiPinMutation,
 } = authApi;

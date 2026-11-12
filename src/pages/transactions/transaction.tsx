@@ -271,13 +271,30 @@ export default function Transaction() {
       void refetch();
     }
   }, [transferFinished, refetch]);
+
   const [deposit,  { isLoading: depositing  }] = useDepositMutation();
 
   const [modal, setModal] = useState<ModalMode>(null);
 
+  useEffect(() => {
+    if (transferStatus !== "SUCCESS" || modal !== "transfer") return;
+
+    const timeoutId = window.setTimeout(() => {
+      setModal(null);
+      setSubmittedTransfer(null);
+      setReceiverUpiId("");
+      setTransferAmount("");
+      setRemarks("");
+      setTransferPin("");
+    }, 2000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [modal, transferStatus]);
+
   const [receiverUpiId, setReceiverUpiId]   = useState("");
   const [transferAmount, setTransferAmount] = useState("");
   const [remarks, setRemarks]               = useState("");
+  const [transferPin, setTransferPin]       = useState("");
 
   const [depositAmount, setDepositAmount]   = useState("");
   const [depositDesc, setDepositDesc]       = useState("");
@@ -285,6 +302,7 @@ export default function Transaction() {
   function closeTransfer() {
     if (submitting) return;
     setModal(null);
+    setTransferPin("");
     if (transferFinished) {
       setSubmittedTransfer(null);
       setReceiverUpiId("");
@@ -295,18 +313,25 @@ export default function Transaction() {
 
   async function handleTransfer() {
     if (transferring || submittedTransfer || !receiverUpiId || !transferAmount) return;
+    if (!/^\d{6}$/.test(transferPin)) {
+      showToast(toast.error("UPI PIN required", "Enter your six-digit UPI PIN to authorize this transfer."));
+      return;
+    }
     try {
       const result = await transfer({
         receiverUpiId,
         amount: parseFloat(transferAmount),
         remarks,
         idempotencyKey: uuidv4(),
+        upiPin: transferPin,
       }).unwrap();
       setSubmittedTransfer(result);
       setTracking(!["SUCCESS", "FAILED", "REVERSED"].includes(result.status.toUpperCase()));
       refetch();
     } catch {
       showToast(toast.error("Transfer not confirmed", "Check transaction history before trying again."));
+    } finally {
+      setTransferPin("");
     }
   }
 
@@ -513,6 +538,19 @@ export default function Transaction() {
               value={remarks}
               disabled={transferring}
               onChange={(e) => setRemarks(e.target.value)}
+            />
+            <label style={s.label}>UPI PIN</label>
+            <input
+              style={s.input}
+              type="password"
+              inputMode="numeric"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              placeholder="6-digit PIN"
+              disabled={transferring}
+              value={transferPin}
+              onChange={(e) => setTransferPin(e.target.value.replace(/\D/g, ""))}
+              autoComplete="off"
             />
             {(transferring || submittedTransfer) && (
               <div className={`${styles.progress} ${transferFinished ? styles.finished : ''} ${transferStatus === 'REVERSED' || transferStatus === 'REVERSING' ? styles.reversed : ''}`} role="status" aria-live="polite">

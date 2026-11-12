@@ -5,7 +5,7 @@ import { createPayment, initializeDemo, readState, receivePayment } from './stor
 import type { OfflineState } from './storage';
 import QrScanner from './QrScanner';
 import { qrReader, readQrImage } from './qrReader';
-import { useLazyGetQrCodeQuery } from '../apis/store/api/users';
+import { useLazyGetQrCodeDataQuery } from '../apis/store/api/users';
 import './offline.css';
 
 function money(paise: number) {
@@ -34,7 +34,7 @@ function QrDisplay({ text, label }: { text: string; label: string }) {
 }
 
 export default function OfflineQrPage() {
-  const [loadBackendQr] = useLazyGetQrCodeQuery();
+  const [loadBackendQrData] = useLazyGetQrCodeDataQuery();
   const [state, setState] = useState<OfflineState>();
   const [fingerprint, setFingerprint] = useState('');
   const [recipientInput, setRecipientInput] = useState('');
@@ -91,7 +91,12 @@ export default function OfflineQrPage() {
     {error && <p className="offline-error" role="alert">{error}</p>}
     {message && <p className="offline-success" role="status">{message}</p>}
     {!state ? <><button disabled={busy} onClick={() => void run(async () => {
-      const image = await loadBackendQr().unwrap();
+      const qrData = await loadBackendQrData().unwrap();
+      const image = await QRCode.toDataURL(qrData.payload, {
+        errorCorrectionLevel: 'M',
+        width: 560,
+        margin: 4,
+      });
       const result = await qrReader().decodeFromImageUrl(image);
       await initializeDemo({ payload: result.getText(), image });
       setMessage('Existing backend recipient QR cached. INR 300 of demo funds only; no real allocation was made.');
